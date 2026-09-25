@@ -1,0 +1,6 @@
+{
+  "name": "NOVA — Autonomous Skills & Capability Substrate",
+  "description": "Spatial autonomous intelligence operating system featuring real-time 3D acoustic particle topologies, synaptic mind maps, runtime trajectory queues, and deep neural telemetry.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
