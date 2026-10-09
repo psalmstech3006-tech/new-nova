@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { NovaAuthProvider, useNovaAuth } from './context/NovaAuthContext';
 import { NovaStateProvider, useNova } from './context/NovaStateContext';
 import { NovaSettingsProvider } from './context/NovaSettingsContext';
 import { TopHud } from './components/TopHud';
@@ -7,6 +8,7 @@ import { VoicePill } from './components/VoicePill';
 import { CommandPalette } from './components/CommandPalette';
 import { ThemeSelectorModal } from './components/ThemeSelectorModal';
 import { NotificationToasts } from './components/NotificationToasts';
+import { OnboardingFlow } from './components/onboarding/OnboardingFlow';
 import { PresenceScreen } from './screens/PresenceScreen';
 import { SettingsScreen } from './screens/settings/SettingsScreen';
 import { SynapticMapScreen } from './screens/SynapticMapScreen';
@@ -21,6 +23,14 @@ function AppContent() {
     stopListening,
     setCommandPaletteOpen,
   } = useNova();
+
+  const {
+    isOnboardingComplete,
+    isAuthenticated,
+    isSessionLocked,
+  } = useNovaAuth();
+
+  const showOnboarding = !isOnboardingComplete || !isAuthenticated || isSessionLocked;
 
   // Global Keyboard navigation & push-to-talk
   useEffect(() => {
@@ -78,7 +88,7 @@ function AppContent() {
           style={{ backgroundColor: `${theme.palette.accent}0d` }}
         />
         {/* Subtle grid pattern on synaptic view */}
-        {currentScreen === 'synaptic' && (
+        {currentScreen === 'synaptic' && !showOnboarding && (
           <div
             className="absolute inset-0 pointer-events-none transition-opacity duration-500"
             style={{
@@ -89,24 +99,34 @@ function AppContent() {
         )}
       </div>
 
-      {/* ================= TOP MINIMAL DESKTOP HUD ================= */}
-      <TopHud />
-
-      {/* ================= MAIN INTERACTION STAGE ================= */}
-      <main className="flex-1 relative w-full h-full min-h-0 overflow-hidden flex items-center justify-center z-10">
-        {/* Left Navigation Rail */}
-        <div className="absolute left-6 top-6 bottom-8 pointer-events-auto z-20 flex">
-          <NavRail />
+      {showOnboarding ? (
+        /* ================= ONBOARDING / AUTHENTICATION DESKTOP STAGE ================= */
+        <div className="flex-1 w-full h-full min-h-0 overflow-y-auto flex items-center justify-center relative z-10 custom-scrollbar animate-fade-in">
+          <OnboardingFlow />
         </div>
+      ) : (
+        /* ================= MAIN APPLICATION WORKSPACE ================= */
+        <>
+          {/* Top Minimal Desktop HUD */}
+          <TopHud />
 
-        {/* Dynamic Screen Routing */}
-        {currentScreen === 'substrate' && <PresenceScreen />}
-        {currentScreen === 'runtime' && <SettingsScreen />}
-        {currentScreen === 'synaptic' && <SynapticMapScreen />}
+          {/* Main Interaction Stage */}
+          <main className="flex-1 relative w-full h-full min-h-0 overflow-hidden flex items-center justify-center z-10 animate-fade-in">
+            {/* Left Navigation Rail */}
+            <div className="absolute left-6 top-6 bottom-8 pointer-events-auto z-20 flex">
+              <NavRail />
+            </div>
 
-        {/* Center Floating Liquid Voice Pill */}
-        {currentScreen !== 'synaptic' && currentScreen !== 'runtime' && <VoicePill />}
-      </main>
+            {/* Dynamic Screen Routing */}
+            {currentScreen === 'substrate' && <PresenceScreen />}
+            {currentScreen === 'runtime' && <SettingsScreen />}
+            {currentScreen === 'synaptic' && <SynapticMapScreen />}
+
+            {/* Center Floating Liquid Voice Pill */}
+            {currentScreen !== 'synaptic' && currentScreen !== 'runtime' && <VoicePill />}
+          </main>
+        </>
+      )}
 
       {/* ================= BOTTOM FOOTER ================= */}
       <footer
@@ -118,7 +138,9 @@ function AppContent() {
         }}
       >
         <span>
-          {currentScreen === 'runtime'
+          {showOnboarding
+            ? 'NOVA ONBOARDING & SECURE ENCLAVE · OMNIEL OS 4.2'
+            : currentScreen === 'runtime'
             ? 'NOVA SETTINGS & CONTROL CENTER · SECURE ENCLAVE'
             : currentScreen === 'synaptic'
             ? 'SYNAPTIC VAULT ENCLAVE · SHA-256 VERIFIED'
@@ -137,10 +159,12 @@ function AppContent() {
 
 export default function App() {
   return (
-    <NovaStateProvider>
-      <NovaSettingsProvider>
-        <AppContent />
-      </NovaSettingsProvider>
-    </NovaStateProvider>
+    <NovaAuthProvider>
+      <NovaStateProvider>
+        <NovaSettingsProvider>
+          <AppContent />
+        </NovaSettingsProvider>
+      </NovaStateProvider>
+    </NovaAuthProvider>
   );
 }
